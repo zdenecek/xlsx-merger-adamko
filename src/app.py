@@ -1,0 +1,226 @@
+import streamlit as st
+import pandas as pd
+import json
+import os
+from io import BytesIO
+from streamlit_sortables import sort_items  # Import sort_items
+
+def save_configuration(config, filename='config.json'):
+    with open(filename, 'w') as f:
+        json.dump(config, f)
+    st.success(f'Configuration saved to {filename}')
+
+def load_configuration(filename='config.json'):
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            config = json.load(f)
+        st.success(f'Configuration loaded from {filename}')
+        return config
+    else:
+        st.error('Configuration file not found.')
+        return None
+
+def merge_files(files, data_header_idx, data_col_idx, selected_headers):
+    merged_data = []
+
+    for idx, file in enumerate(files):
+        df = pd.read_excel(file, header=None)  # Read without headers
+        # Handle potential mismatch in columns
+        max_col_idx = max(data_header_idx, data_col_idx)
+        if df.shape[1] <= max_col_idx:
+            st.error(f'File "{file.name}" does not have enough columns.')
+            return pd.DataFrame()  # Return empty DataFrame
+
+        # Extract headers and data using column indexes
+        headers = df.iloc[:, data_header_idx].dropna().astype(str).tolist()
+        data_values = df.iloc[:, data_col_idx].fillna('').astype(str).tolist()
+        data_dict = dict(zip(headers, data_values))
+        row = []
+       
+        # first is filename
+        row.append(file.name) 
+        headers = ["Filename" ] + selected_headers
+        
+        for header in selected_headers:
+            value = data_dict.get(str(header), None)
+            row.append(value)
+        merged_data.append(row)
+
+    merged_df = pd.DataFrame(merged_data, columns=headers)
+    return merged_df
+
+def main():
+    st.set_page_config(page_title='Adamkův Excel Merger', page_icon=':bar_chart:')
+    st.title('Excel Data Merger')
+
+    # Initialize session state variables
+    if 'data_header_idx' not in st.session_state:
+        st.session_state['data_header_idx'] = None
+    if 'data_col_idx' not in st.session_state:
+        st.session_state['data_col_idx'] = None
+    if 'selected_headers' not in st.session_state:
+        st.session_state['selected_headers'] = []
+    if 'config_loaded' not in st.session_state:
+        st.session_state['config_loaded'] = False
+
+    st.header('Load Configuration')
+    config_file = st.file_uploader('Choose a configuration file to load', type=['json'])
+    if config_file is not None:
+        config = load_configuration(config_file)
+        if config:
+            st.session_state['data_header_idx'] = config['data_header_idx']
+            st.session_state['data_col_idx'] = config['data_col_idx']
+            st.session_state['selected_headers'] = config['selected_headers']
+            st.session_state['config_loaded'] = True
+
+
+
+    st.header('Upload Files')
+    # 1. File Upload
+    uploaded_files = st.file_uploader(
+        "Choose Excel files to merge",
+        accept_multiple_files=True,
+        type=['xlsx'],
+    )
+
+    if uploaded_files:
+        st.header('Step 1: Specify Columns by Index')
+        sample_file = uploaded_files[0]
+        df_sample = pd.read_excel(sample_file, header=None)
+        num_columns = df_sample.shape[1]
+
+        column_examples = [
+            f"Index {i}: {df_sample.iloc[0, i]}" for i in range(num_columns)
+        ]
+
+        # Select data_header_idx
+        data_header_idx_options = list(range(num_columns))
+
+        # Determine index for data_header_idx
+        if st.session_state['data_header_idx'] is not None and st.session_state['data_header_idx'] in data_header_idx_options:
+            data_header_idx_index = data_header_idx_options.index(st.session_state['data_header_idx'])
+        else:
+            data_header_idx_index = 0  # Default value
+
+        data_header_idx = st.selectbox(
+            'Select the column index that contains data headers',
+            options=data_header_idx_options,
+            format_func=lambda x: column_examples[x],
+            index=data_header_idx_index,
+        )
+        st.session_state['data_header_idx'] = data_header_idx
+
+        # Select data_col_idx
+        # Determine index for data_col_idx
+        if st.session_state['data_col_idx'] is not None and st.session_state['data_col_idx'] in data_header_idx_options:
+            data_col_idx_index = data_header_idx_options.index(st.session_state['data_col_idx'])
+        else:
+            # Default to the next column index, if possible
+            default_col_idx = data_header_idx + 1 if data_header_idx + 1 < num_columns else data_header_idx
+            data_col_idx_index = data_header_idx_options.index(default_col_idx)
+
+        data_col_idx = st.selectbox(
+            'Select the column index that contains data',
+            options=data_header_idx_options,
+            format_func=lambda x: column_examples[x],
+            index=min(data_header_idx + 1, len(data_header_idx_options) - 1),
+        )
+        st.session_state['data_col_idx'] = data_col_idx
+
+        st.header('Step 2: Select Data Headers')
+        all_headers = []
+        for file in uploaded_files:
+            df = pd.read_excel(file, header=None)
+            # Ensure the file has enough columns
+            if df.shape[1] <= max(data_header_idx, data_col_idx):
+                st.error(f"File \"{file.name}\" does not have enough columns.")
+                return
+            headers = df.iloc[:, data_header_idx].dropna().astype(str).tolist()
+            all_headers.extend(headers)
+
+        # Remove duplicates while preserving order
+        all_headers = list(dict.fromkeys(all_headers))
+
+        # Create a DataFrame for headers with a selection column
+        headers_df = pd.DataFrame({'Header': all_headers})
+
+        # Determine which headers are selected based on session state
+        if st.session_state['selected_headers']:
+            headers_df['Select'] = headers_df['Header'].isin(st.session_state['selected_headers'])
+        else:
+            headers_df['Select'] = True  # Default to all selected
+
+        # Allow user to deselect headers
+        edited_df = st.data_editor(
+            headers_df,
+            use_container_width=True,
+            key='headers_editor',
+            disabled=["Header"]  # Disable editing of the 'Header' column
+        )
+
+
+
+        # Update selected_headers in session state
+        selected_headers = edited_df[edited_df['Select']]['Header'].tolist()
+
+        # Allow reordering of selected headers using sort_items
+        st.header('Step 3: Reorder Data Headers')
+        if selected_headers:
+            st.write('Drag to reorder the selected headers:')
+            unsorted_headers = selected_headers.copy()
+            sorted_headers = sort_items(
+                items=unsorted_headers,
+                direction='vertical',
+                key=f'header_reordering_{hash(tuple(selected_headers))}'
+            )
+            # Update sorted_headers in session state
+        else:
+            st.warning('Please select at least one header.')
+
+        # Save Configuration
+      # Save Configuration
+        st.header('Save Configuration')
+        # Create configuration data
+        config = {
+            'data_header_idx': data_header_idx,
+            'data_col_idx': data_col_idx,
+            'selected_headers': selected_headers
+        }
+        config_json = json.dumps(config, indent=4)
+        st.download_button(
+            label='Download Configuration',
+            data=config_json,
+            file_name='config.json',
+            mime='application/json'
+        )
+        
+        
+        # Merge Data
+        st.header('Step 4: Merge Data')
+        if st.button('Merge Files'):
+            if selected_headers:
+                merged_df = merge_files(
+                    uploaded_files,
+                    data_header_idx,
+                    data_col_idx,
+                    selected_headers
+                )
+                if not merged_df.empty:
+                    st.success('Files merged successfully!')
+                    # Display preview
+                    st.data_editor(merged_df)
+                    # Download Merged File
+                    towrite = BytesIO()
+                    merged_df.to_excel(towrite, index=False)
+                    towrite.seek(0)
+                    st.download_button(
+                        label="Download Merged Excel File",
+                        data=towrite,
+                        file_name='merged_data.xlsx',
+                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+            else:
+                st.error('No headers selected. Please select at least one header before merging.')
+
+if __name__ == '__main__':
+    main()
