@@ -13,14 +13,14 @@ def save_configuration(config, filename='config.json'):
         json.dump(config, f)
     st.success(f'Configuration saved to {filename}')
 
-def load_configuration(filename='config.json'):
-    if os.path.exists(filename):
-        with open(filename, 'r') as f:
-            config = json.load(f)
-        st.success(f'Configuration loaded from {filename}')
+def load_configuration(file):
+    try:
+        # Read the configuration from the uploaded JSON file
+        config = json.load(file)
+        st.success('Configuration loaded successfully!')
         return config
-    else:
-        st.error('Configuration file not found.')
+    except Exception as e:
+        st.error(f'Error loading configuration: {e}')
         return None
 
 def merge_files(files, data_header_idx, data_col_idx, selected_headers):
