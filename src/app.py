@@ -3,7 +3,10 @@ import pandas as pd
 import json
 import os
 from io import BytesIO
-from streamlit_sortables import sort_items  # Import sort_items
+from streamlit_sortables import sort_items
+
+from src.data_quality import validate_data, schema
+
 
 def save_configuration(config, filename='config.json'):
     with open(filename, 'w') as f:
@@ -195,32 +198,52 @@ def main():
         )
         
         
-        # Merge Data
-        st.header('Step 4: Merge Data')
         if st.button('Merge Files'):
-            if selected_headers:
+            if not sorted_headers:
+                st.error('No headers selected. Please select at least one header before merging.')
+            else:
                 merged_df = merge_files(
                     uploaded_files,
                     data_header_idx,
                     data_col_idx,
-                    selected_headers
+                    sorted_headers
                 )
-                if not merged_df.empty:
+                if merged_df.empty:
+                    st.error('Merging failed. No data to validate.')
+                else:
                     st.success('Files merged successfully!')
-                    # Display preview
-                    st.data_editor(merged_df)
-                    # Download Merged File
-                    towrite = BytesIO()
-                    merged_df.to_excel(towrite, index=False)
-                    towrite.seek(0)
-                    st.download_button(
-                        label="Download Merged Excel File",
-                        data=towrite,
-                        file_name='merged_data.xlsx',
-                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                    )
-            else:
-                st.error('No headers selected. Please select at least one header before merging.')
+                    # Validate the merged data
+                    validated_df, validation_errors = validate_data(merged_df, schema)
+                    if validated_df is not None:
+                        st.success('Data validation passed!')
+                        # Display validated data
+                        st.subheader('Validated Data Preview')
+                        st.dataframe(validated_df)
+                        # Download Validated Merged File
+                        towrite = BytesIO()
+                        validated_df.to_excel(towrite, index=False)
+                        towrite.seek(0)
+                        st.download_button(
+                            label="Download Validated Merged Excel File",
+                            data=towrite,
+                            file_name='validated_merged_data.xlsx',
+                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        )
+                    else:
+                        st.error('Data validation failed. Please review the errors below.')
+                        # Display validation errors
+                        st.dataframe(validation_errors)
+                        # Optionally allow the user to download the errors
+                        error_buffer = BytesIO()
+                        validation_errors.to_excel(error_buffer, index=False)
+                        error_buffer.seek(0)
+                        st.download_button(
+                            label="Download Validation Errors",
+                            data=error_buffer,
+                            file_name='validation_errors.xlsx',
+                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        )
+
 
 if __name__ == '__main__':
     main()
