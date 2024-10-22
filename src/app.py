@@ -56,6 +56,26 @@ def merge_files(files, data_header_idx, data_col_idx, selected_headers):
 def main():
     st.set_page_config(page_title='Adamkův Excel Merger', page_icon=':bar_chart:', layout='wide')
     st.title('Excel Data Merger')
+    
+    st.write("""
+This Streamlit app allows you to efficiently merge data from multiple Excel files based on specified columns and headers. It's designed to simplify the process of consolidating data, especially when dealing with files that share a consistent structure. Here's what you can do with this app:
+
+- **Upload Multiple Excel Files:** Select and upload multiple `.xlsx` files that you want to merge.
+
+- **Specify Data Columns:** Define which columns in your Excel files contain the data headers and the actual data values by selecting their column indices.
+
+- **Select and Reorder Headers:** Choose the specific data headers you want to include in the merged dataset and reorder them according to your preferences.
+
+- **Merge Data:** Combine the selected data from all uploaded files into a single, consolidated dataset.
+
+- **Edit Merged Data:** Preview and make any necessary edits to the merged data directly within the app before finalizing.
+
+- **Validate Data Quality:** Run data quality checks against a predefined schema to ensure the merged data meets the required standards.
+
+- **Download Results:** Easily download the merged and validated data as an Excel file for further use.
+
+- **Save and Load Configurations:** Save your column selections and header configurations as a JSON file to reuse settings in future sessions, streamlining repetitive tasks.
+""")
 
     # Initialize session state variables
     if 'data_header_idx' not in st.session_state:
