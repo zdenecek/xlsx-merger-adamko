@@ -199,6 +199,8 @@ def main():
         )
         
         st.header('Merge Files')
+        
+        
         if st.button('Merge Files'):
             if not sorted_headers:
                 st.error('No headers selected. Please select at least one header before merging.')
@@ -212,54 +214,59 @@ def main():
                 if merged_df.empty:
                     st.error('Merging failed. No data to validate.')
                 else:
-                    st.success('Files merged successfully!')
-                    editted_data = st.data_editor(merged_df, use_container_width=True)
-                    # Validate the merged data
-                    
-                    filename = f"reports_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
-                    out_stream = BytesIO()
-                    editted_data.to_excel(out_stream, index=False)
-                    out_stream.seek(0)
-                    st.download_button(
-                        label="Download Merged Excel File",
-                        data=out_stream,
-                        file_name=filename,
-                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                    )
-                
-                    st.header("Data quality checks")
-                    validated_df, validation_errors = validate_data(edited_df, schema)
-                    if validated_df is not None:
-                        st.success('Data validation passed!')
-                        # Display validated data
-                        st.subheader('Validated Data Preview')
-                        st.dataframe(validated_df)
-                        # Download Validated Merged File
-                        towrite = BytesIO()
-                        validated_df.to_excel(towrite, index=False)
-                        towrite.seek(0)
-                        st.download_button(
-                            label="Download Validated Merged Excel File",
-                            data=towrite,
-                            file_name='validated_merged_data.xlsx',
-                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                        )
-                    else:
-                        st.error('Data validation failed. Please review the errors below.')
-                        # Display validation errors
-                        
-                        
-                        st.dataframe(validation_errors)
-                        # Optionally allow the user to download the errors
-                        error_buffer = BytesIO()
-                        validation_errors.to_excel(error_buffer, index=False)
-                        error_buffer.seek(0)
-                        st.download_button(
-                            label="Download Validation Errors",
-                            data=error_buffer,
-                            file_name='validation_errors.xlsx',
-                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                        )
+                    st.session_state['merged_df'] = merged_df
+                    st.session_state['sorted_headers'] = sorted_headers
+
+        # Display merged data if available
+        if 'merged_df' in st.session_state:
+            merged_df = st.session_state['merged_df']
+            sorted_headers = st.session_state['sorted_headers']
+            st.success('Files merged successfully!')
+            edited_data = st.data_editor(merged_df, use_container_width=True)
+            
+            filename = f"reports_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+            out_stream = BytesIO()
+            edited_data.to_excel(out_stream, index=False)
+            out_stream.seek(0)
+            st.download_button(
+                label="Download Merged Excel File",
+                data=out_stream,
+                file_name=filename,
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            
+            st.header("Data quality checks")
+            validated_df, validation_errors = validate_data(edited_data, schema)
+            if validated_df is not None:
+                st.success('Data validation passed!')
+                # Display validated data
+                st.subheader('Validated Data Preview')
+                st.dataframe(validated_df)
+                # Download Validated Merged File
+                towrite = BytesIO()
+                validated_df.to_excel(towrite, index=False)
+                towrite.seek(0)
+                st.download_button(
+                    label="Download Validated Merged Excel File",
+                    data=twrited,
+                    file_name='validated_merged_data.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+            else:
+                st.error('Data validation failed. Please review the errors below.')
+                # Display validation errors
+                st.dataframe(validation_errors)
+                # Optionally allow the user to download the errors
+                error_buffer = BytesIO()
+                validation_errors.to_excel(error_buffer, index=False)
+                error_buffer.seek(0)
+                st.download_button(
+                    label="Download Validation Errors",
+                    data=error_buffer,
+                    file_name='validation_errors.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+
 
 
 if __name__ == '__main__':
