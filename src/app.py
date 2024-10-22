@@ -225,7 +225,7 @@ def main():
                     )
                 
                     st.header("Data quality checks")
-                    validated_df, validation_errors = validate_data(merged_df, schema)
+                    validated_df, validation_errors = validate_data(edited_df, schema)
                     if validated_df is not None:
                         st.success('Data validation passed!')
                         # Display validated data
