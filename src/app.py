@@ -216,7 +216,7 @@ def main():
                     editted_data = st.data_editor(merged_df, use_container_width=True)
                     # Validate the merged data
                     
-                    filename = f"reports_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+                    filename = f"reports_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
                     st.download_button(
                         label="Download Merged Excel File",
                         data=editted_data,
