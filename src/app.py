@@ -5,7 +5,7 @@ import os
 from io import BytesIO
 from streamlit_sortables import sort_items
 
-from src.data_quality import validate_data, schema
+from data_quality import validate_data, schema
 
 
 def save_configuration(config, filename='config.json'):
@@ -212,7 +212,10 @@ def main():
                     st.error('Merging failed. No data to validate.')
                 else:
                     st.success('Files merged successfully!')
+                    st.data_editor(merged_df, use_container_width=True)
                     # Validate the merged data
+                    
+                    st.header("Data quality checks")
                     validated_df, validation_errors = validate_data(merged_df, schema)
                     if validated_df is not None:
                         st.success('Data validation passed!')
@@ -232,6 +235,8 @@ def main():
                     else:
                         st.error('Data validation failed. Please review the errors below.')
                         # Display validation errors
+                        
+                        
                         st.dataframe(validation_errors)
                         # Optionally allow the user to download the errors
                         error_buffer = BytesIO()
