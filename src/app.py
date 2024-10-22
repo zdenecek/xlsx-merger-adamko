@@ -218,7 +218,7 @@ def main():
                     
                     filename = f"reports_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
                     out_stream = BytesIO()
-                    edited_df.to_excel(towrite, index=False)
+                    edited_df.to_excel(out_stream, index=False)
                     out_stream.seek(0)
                     st.download_button(
                         label="Download Merged Excel File",
