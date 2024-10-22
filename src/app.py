@@ -61,20 +61,13 @@ def main():
 This Streamlit app allows you to transpose and merge data from multiple Excel files based on specified columns for headers and data. Here's how it works:
 
 - **Upload Multiple Excel Files:** Select and upload multiple `.xlsx` files that you want to merge.
-
 - **Specify Data Columns:** Define which columns in your Excel files contain the data headers and the actual data values by selecting their column indices.
-
 - **Select and Reorder Headers:** Choose the specific data headers you want to include in the merged dataset and reorder them according to your preferences.
-
 - **Merge Data:** Combine the selected data from all uploaded files into a single, consolidated dataset.
-
 - **Edit Merged Data:** Preview and make any necessary edits to the merged data directly within the app before finalizing.
-
 - **Validate Data Quality:** Run data quality checks against a predefined schema to ensure the merged data meets the required standards.
-
 - **Download Results:** Easily download the merged and validated data as an Excel file for further use.
-
-- **Save and Load Configurations:** Save your column selections and header configurations as a JSON file to reuse settings in future sessions, streamlining repetitive tasks.
+- **Save and Load Configurations:** Save your column selections and header configurations as a JSON file to reuse settings in future sessions.
 """)
 
     # Initialize session state variables
