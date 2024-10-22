@@ -1,3 +1,4 @@
+import datetime
 import streamlit as st
 import pandas as pd
 import json
@@ -197,7 +198,7 @@ def main():
             mime='application/json'
         )
         
-        
+        st.header('Merge Files')
         if st.button('Merge Files'):
             if not sorted_headers:
                 st.error('No headers selected. Please select at least one header before merging.')
@@ -212,9 +213,17 @@ def main():
                     st.error('Merging failed. No data to validate.')
                 else:
                     st.success('Files merged successfully!')
-                    st.data_editor(merged_df, use_container_width=True)
+                    editted_data = st.data_editor(merged_df, use_container_width=True)
                     # Validate the merged data
                     
+                    filename = f"reports_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+                    st.download_button(
+                        label="Download Merged Excel File",
+                        data=editted_data,
+                        file_name='merged.xlsx',
+                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+                
                     st.header("Data quality checks")
                     validated_df, validation_errors = validate_data(merged_df, schema)
                     if validated_df is not None:
