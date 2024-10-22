@@ -53,7 +53,7 @@ def merge_files(files, data_header_idx, data_col_idx, selected_headers):
     return merged_df
 
 def main():
-    st.set_page_config(page_title='Adamkův Excel Merger', page_icon=':bar_chart:')
+    st.set_page_config(page_title='Adamkův Excel Merger', page_icon=':bar_chart:', layout='wide')
     st.title('Excel Data Merger')
 
     # Initialize session state variables
@@ -173,7 +173,7 @@ def main():
             unsorted_headers = selected_headers.copy()
             sorted_headers = sort_items(
                 items=unsorted_headers,
-                direction='vertical',
+                direction='horizontal',
                 key=f'header_reordering_{hash(tuple(selected_headers))}'
             )
             # Update sorted_headers in session state
