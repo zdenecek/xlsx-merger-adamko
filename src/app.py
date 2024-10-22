@@ -58,7 +58,7 @@ def main():
     st.title('Excel Data Merger')
     
     st.write("""
-This Streamlit app allows you to efficiently merge data from multiple Excel files based on specified columns and headers. It's designed to simplify the process of consolidating data, especially when dealing with files that share a consistent structure. Here's what you can do with this app:
+This Streamlit app allows you to transpose and merge data from multiple Excel files based on specified columns for headers and data. Here's how it works:
 
 - **Upload Multiple Excel Files:** Select and upload multiple `.xlsx` files that you want to merge.
 
