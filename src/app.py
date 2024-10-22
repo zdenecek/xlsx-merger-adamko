@@ -217,10 +217,13 @@ def main():
                     # Validate the merged data
                     
                     filename = f"reports_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+                    out_stream = BytesIO()
+                    edited_df.to_excel(towrite, index=False)
+                    out_stream.seek(0)
                     st.download_button(
                         label="Download Merged Excel File",
-                        data=editted_data,
-                        file_name='merged.xlsx',
+                        data=out_stream,
+                        file_name=filename,
                         mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     )
                 
