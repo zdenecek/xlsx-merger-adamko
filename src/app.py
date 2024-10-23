@@ -24,8 +24,13 @@ def load_configuration(file):
         st.error(f'Error loading configuration: {e}')
         return None
 
-def merge_files(files, data_header_idx, data_col_idx, selected_headers):
+def merge_files(files, data_header_idx, data_col_idx, selected_headers, order):
     merged_data = []
+
+    if order == "By last word in filename":
+        files.sort(key=lambda file: file.name.split()[-1])
+    if order == "By filename":
+        files.sort(key=lambda file: file.name)
 
     for idx, file in enumerate(files):
         df = pd.read_excel(file, header=None)  # Read without headers
@@ -36,7 +41,7 @@ def merge_files(files, data_header_idx, data_col_idx, selected_headers):
             return pd.DataFrame()  # Return empty DataFrame
 
         # Extract headers and data using column indexes
-        headers = df.iloc[:, data_header_idx].dropna().astype(str).tolist()
+        headers = df.iloc[:, data_header_idx].astype(str).tolist()
         data_values = df.iloc[:, data_col_idx].fillna('').astype(str).tolist()
         data_dict = dict(zip(headers, data_values))
         row = []
@@ -193,6 +198,10 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
             # Update sorted_headers in session state
         else:
             st.warning('Please select at least one header.')
+	
+
+        st.header('Step 4: Order rows')
+        order = st.selectbox(label="Order by", options=["By filename", "By last word in filename"])
 
         # Save Configuration
       # Save Configuration
@@ -222,7 +231,8 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
                     uploaded_files,
                     data_header_idx,
                     data_col_idx,
-                    sorted_headers
+                    sorted_headers,
+                    order
                 )
                 if merged_df.empty:
                     st.error('Merging failed. No data to validate.')
