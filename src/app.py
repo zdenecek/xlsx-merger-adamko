@@ -93,6 +93,7 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
             st.session_state['data_header_idx'] = config['data_header_idx']
             st.session_state['data_col_idx'] = config['data_col_idx']
             st.session_state['selected_headers'] = config['selected_headers']
+            st.session_state['order'] = config.get('order', "By filename")
             st.session_state['config_loaded'] = True
 
 
@@ -185,11 +186,20 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
         # Update selected_headers in session state
         selected_headers = edited_df[edited_df['Select']]['Header'].tolist()
 
+
         # Allow reordering of selected headers using sort_items
         st.header('Step 3: Reorder Data Headers')
         if selected_headers:
             st.write('Drag to reorder the selected headers:')
-            unsorted_headers = selected_headers.copy()
+            # Use the order from session state if available, otherwise use the current order
+            if st.session_state['selected_headers']:
+                # Preserve the order from session state for headers that exist in both lists
+                unsorted_headers = [h for h in st.session_state['selected_headers'] if h in selected_headers]
+                # Add any new headers that weren't in session state
+                unsorted_headers.extend([h for h in selected_headers if h not in unsorted_headers])
+            else:
+                unsorted_headers = selected_headers.copy()
+                
             sorted_headers = sort_items(
                 items=unsorted_headers,
                 direction='horizontal',
@@ -201,7 +211,14 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
 	
 
         st.header('Step 4: Order rows')
-        order = st.selectbox(label="Order by", options=["By filename", "By last word in filename"])
+        # Get the order from config if available, otherwise use default
+        default_order = st.session_state.get('order', "By filename")
+        order = st.selectbox(
+            label="Order by", 
+            options=["By filename", "By last word in filename"],
+            index=0 if default_order == "By filename" else 1
+        )
+        st.session_state['order'] = order
 
         # Save Configuration
       # Save Configuration
@@ -210,7 +227,8 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
         config = {
             'data_header_idx': data_header_idx,
             'data_col_idx': data_col_idx,
-            'selected_headers': selected_headers
+            'selected_headers': sorted_headers,
+            'order': order
         }
         config_json = json.dumps(config, indent=4)
         st.download_button(
