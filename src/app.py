@@ -259,7 +259,7 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
                     st.session_state['sorted_headers'] = sorted_headers
 
         # Display merged data if available
-        if 'merged_df' in st.session_state:
+        if 'merged_df' in st.session_state and st.session_state['merged_df'] is not None:
             merged_df = st.session_state['merged_df']
             sorted_headers = st.session_state['sorted_headers']
             st.success('Files merged successfully!')
