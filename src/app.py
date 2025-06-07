@@ -208,6 +208,7 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
             # Update sorted_headers in session state
         else:
             st.warning('Please select at least one header.')
+            sorted_headers = []  # Initialize as empty list when no headers selected
 	
 
         st.header('Step 4: Order rows')
@@ -221,7 +222,6 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
         st.session_state['order'] = order
 
         # Save Configuration
-      # Save Configuration
         st.header('Save Configuration')
         # Create configuration data
         config = {
@@ -289,7 +289,7 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
                 towrite.seek(0)
                 st.download_button(
                     label="Download Validated Merged Excel File",
-                    data=twrited,
+                    data=towrite,
                     file_name='validated_merged_data.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
