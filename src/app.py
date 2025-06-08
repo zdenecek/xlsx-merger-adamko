@@ -4,17 +4,45 @@ import pandas as pd
 import json
 import os
 from io import BytesIO
+from typing import List, Dict, Any, Optional, Tuple, Union
 from streamlit_sortables import sort_items
 
 from data_quality import validate_data, schema
 
+def remove_duplicates(lst: List[Any]) -> List[Any]:
+    """
+    Remove duplicates from a list while preserving order.
+    
+    Args:
+        lst: List that may contain duplicate elements
+        
+    Returns:
+        List with duplicates removed, preserving original order
+    """
+    return list(dict.fromkeys(lst))
 
-def save_configuration(config, filename='config.json'):
+def save_configuration(config: Dict[str, Any], filename: str = 'config.json') -> None:
+    """
+    Save configuration dictionary to a JSON file.
+    
+    Args:
+        config: Configuration dictionary to save
+        filename: Name of the file to save configuration to
+    """
     with open(filename, 'w') as f:
         json.dump(config, f)
     st.success(f'Configuration saved to {filename}')
 
-def load_configuration(file):
+def load_configuration(file: Any) -> Optional[Dict[str, Any]]:
+    """
+    Load configuration from an uploaded JSON file.
+    
+    Args:
+        file: Uploaded file object from Streamlit file uploader
+        
+    Returns:
+        Configuration dictionary if successful, None if failed
+    """
     try:
         # Read the configuration from the uploaded JSON file
         config = json.load(file)
@@ -24,7 +52,21 @@ def load_configuration(file):
         st.error(f'Error loading configuration: {e}')
         return None
 
-def merge_files(files, data_header_idx, data_col_idx, selected_headers, order):
+def merge_files(files: List[Any], data_header_idx: int, data_col_idx: int, 
+                selected_headers: List[str], order: str) -> pd.DataFrame:
+    """
+    Merge data from multiple Excel files based on specified columns.
+    
+    Args:
+        files: List of uploaded file objects
+        data_header_idx: Column index containing data headers
+        data_col_idx: Column index containing data values
+        selected_headers: List of headers to include in merged data
+        order: Sorting order for files ("By filename" or "By last word in filename")
+        
+    Returns:
+        Merged DataFrame with filename as first column and selected data
+    """
     merged_data = []
 
     if order == "By last word in filename":
@@ -58,7 +100,18 @@ def merge_files(files, data_header_idx, data_col_idx, selected_headers, order):
     merged_df = pd.DataFrame(merged_data, columns=headers)
     return merged_df
 
-def main():
+def main() -> None:
+    """
+    Main Streamlit application function for Excel Data Merger.
+    
+    This function creates a web interface that allows users to:
+    - Upload multiple Excel files
+    - Configure column mappings for headers and data
+    - Select and reorder data headers
+    - Merge files into a consolidated dataset
+    - Validate data quality
+    - Download results
+    """
     st.set_page_config(page_title='Adamkův Excel Merger', page_icon=':bar_chart:', layout='wide')
     st.title('Excel Data Merger')
     
@@ -82,6 +135,9 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
         st.session_state['data_col_idx'] = None
     if 'selected_headers' not in st.session_state:
         st.session_state['selected_headers'] = []
+    elif st.session_state['selected_headers']:
+        # Ensure no duplicates in existing session state
+        st.session_state['selected_headers'] = remove_duplicates(st.session_state['selected_headers'])
     if 'config_loaded' not in st.session_state:
         st.session_state['config_loaded'] = False
 
@@ -92,7 +148,9 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
         if config:
             st.session_state['data_header_idx'] = config['data_header_idx']
             st.session_state['data_col_idx'] = config['data_col_idx']
-            st.session_state['selected_headers'] = config['selected_headers']
+            # Filter duplicates from loaded config while preserving order
+            loaded_headers = config.get('selected_headers', [])
+            st.session_state['selected_headers'] = remove_duplicates(loaded_headers) if loaded_headers else []
             st.session_state['order'] = config.get('order', "By filename")
             st.session_state['config_loaded'] = True
 
@@ -162,14 +220,17 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
             all_headers.extend(headers)
 
         # Remove duplicates while preserving order
-        all_headers = list(dict.fromkeys(all_headers))
+        all_headers = remove_duplicates(all_headers)
 
         # Create a DataFrame for headers with a selection column
         headers_df = pd.DataFrame({'Header': all_headers})
 
         # Determine which headers are selected based on session state
         if st.session_state['selected_headers']:
-            headers_df['Select'] = headers_df['Header'].isin(st.session_state['selected_headers'])
+            # Filter duplicates from session state while preserving order
+            session_headers = remove_duplicates(st.session_state['selected_headers'])
+            st.session_state['selected_headers'] = session_headers  # Update session state with filtered headers
+            headers_df['Select'] = headers_df['Header'].isin(session_headers)
         else:
             headers_df['Select'] = True  # Default to all selected
 
@@ -185,6 +246,8 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
 
         # Update selected_headers in session state
         selected_headers = edited_df[edited_df['Select']]['Header'].tolist()
+        # Filter duplicates while preserving order
+        selected_headers = remove_duplicates(selected_headers)
 
 
         # Allow reordering of selected headers using sort_items
@@ -197,6 +260,8 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
                 unsorted_headers = [h for h in st.session_state['selected_headers'] if h in selected_headers]
                 # Add any new headers that weren't in session state
                 unsorted_headers.extend([h for h in selected_headers if h not in unsorted_headers])
+                # Filter duplicates while preserving order
+                unsorted_headers = remove_duplicates(unsorted_headers)
             else:
                 unsorted_headers = selected_headers.copy()
                 
@@ -205,6 +270,9 @@ This Streamlit app allows you to transpose and merge data from multiple Excel fi
                 direction='horizontal',
                 key=f'header_reordering_{hash(tuple(selected_headers))}'
             )
+
+            # Remove duplicates while preserving order
+            sorted_headers = remove_duplicates(sorted_headers)
             # Update sorted_headers in session state
         else:
             st.warning('Please select at least one header.')
